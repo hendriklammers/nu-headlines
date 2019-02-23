@@ -1,6 +1,7 @@
 import Parser, { Items } from 'rss-parser'
 import ora from 'ora'
 import inquirer from 'inquirer'
+import opn from 'opn'
 
 interface FeedItem {
   title: string
@@ -37,15 +38,17 @@ const main = async () => {
   const feed = await parser.parseURL('https://www.nu.nl/rss/Algemeen')
   spinner.stop()
   const choices = await feedToChoices(feed)
-  const selected = await inquirer.prompt([
+  const answer: { url: string } = await inquirer.prompt([
     {
       type: 'rawlist',
-      name: 'headlines',
+      name: 'url',
       message: 'Select headline',
       choices,
       pageSize: 100,
     },
   ])
+  opn(answer.url)
+  process.exit()
 }
 
 main().catch(console.error)
