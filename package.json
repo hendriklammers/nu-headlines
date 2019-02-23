@@ -10,9 +10,7 @@
     "build:watch": "tsc --watch",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run build",
-    "start": "nodemon --watch src/**/*.ts --exec ts-node src/index.ts",
-    "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "start": "nodemon --watch src/**/*.ts --exec ts-node src/index.ts"
   },
   "keywords": [
     "node",
@@ -31,21 +29,18 @@
   },
   "devDependencies": {
     "@types/inquirer": "0.0.43",
-    "@types/jest": "^24.0.6",
     "@types/node": "^11.9.4",
     "@types/opn": "^5.1.0",
     "@types/ora": "^3.0.0",
-    "jest": "^24.1.0",
     "nodemon": "^1.18.10",
     "prettier": "^1.16.4",
-    "ts-jest": "^24.0.0",
     "ts-node": "^8.0.2",
     "tslint": "^5.12.1",
     "tslint-config-prettier": "^1.18.0",
     "typescript": "^3.3.3333"
   },
   "bin": {
-    "nu-headlines": "lib/cli.js"
+    "nu-headlines": "lib/index.js"
   },
   "files": [
     "lib/**/*"
