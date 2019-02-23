@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "lib",
+    "resolveJsonModule": true,
+    "jsx": "react"
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
