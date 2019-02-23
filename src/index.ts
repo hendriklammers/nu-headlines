@@ -1,5 +1,6 @@
 import Parser from 'rss-parser'
 import ora from 'ora'
+import inquirer from 'inquirer'
 
 const parser = new Parser()
 const spinner = ora({
@@ -12,10 +13,25 @@ const main = async () => {
   spinner.stop()
 
   if (feed.items) {
-    const headlines = feed.items.map((item, index) => {
-      return index + ' ' + item.title
+    const choices = feed.items.map((item, index) => {
+      return {
+        name: item.title as string,
+        value: item.link as string,
+        short: item.content as string,
+      }
     })
-    console.log(headlines.join('\n') + '\n')
+
+    inquirer.prompt([
+      {
+        type: 'rawlist',
+        name: 'headlines',
+        message: 'Select headline',
+        choices,
+        pageSize: 100,
+      },
+    ])
+
+    // console.log(headlines.join('\n') + '\n')
   }
 }
 
