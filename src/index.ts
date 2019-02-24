@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import Parser, { Items } from 'rss-parser'
 import ora from 'ora'
 import inquirer from 'inquirer'
