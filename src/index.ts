@@ -11,17 +11,21 @@ interface FeedItem {
 interface Choice {
   name: string
   value: string
+  link: string
 }
 
 const feedToChoices = (feed: Items): Promise<Choice[]> => {
   return new Promise((resolve, reject) => {
     if (feed.items) {
-      const choices = feed.items.map((item: FeedItem, index: number) => {
-        return {
-          name: item.title,
-          value: item.link,
+      const choices = feed.items.map(
+        ({ title, link }: FeedItem, index: number) => {
+          return {
+            name: title,
+            value: `${index + 1}`,
+            link,
+          }
         }
-      })
+      )
       resolve(choices)
     } else {
       reject('No feed items available')
@@ -37,17 +41,21 @@ const main = async () => {
   const parser = new Parser()
   const feed = await parser.parseURL('https://www.nu.nl/rss/Algemeen')
   spinner.stop()
+
   const choices = await feedToChoices(feed)
-  const answer: { url: string } = await inquirer.prompt([
+  const { selected } = await inquirer.prompt([
     {
       type: 'rawlist',
-      name: 'url',
+      name: 'selected',
       message: 'Select headline',
       choices,
       pageSize: 100,
     },
   ])
-  opn(answer.url)
+
+  const link = choices[selected - 1].link
+  process.stdout.write(`Opening in browser: ${link}\n`)
+  opn(link)
   process.exit()
 }
 

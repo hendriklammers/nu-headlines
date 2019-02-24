@@ -11,7 +11,9 @@ $ npm install -g nu-headlines
 
 ## Usage
 
-
+```
+$ nu-headlines
+```
 
 ## License
 
