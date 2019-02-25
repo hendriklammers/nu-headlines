@@ -41,7 +41,7 @@
     "typescript": "^3.3.3333"
   },
   "bin": {
-    "nu-headlines": "lib/index.js"
+    "nu.nl": "lib/index.js"
   },
   "files": [
     "lib/**/*"
