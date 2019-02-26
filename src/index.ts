@@ -48,7 +48,7 @@ const main = async () => {
     {
       type: 'rawlist',
       name: 'selected',
-      message: 'Select headline',
+      message: 'Open selected article in browser: ',
       choices,
       pageSize: 100,
     },
