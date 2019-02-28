@@ -3,6 +3,8 @@ import Parser, { Items } from 'rss-parser'
 import ora from 'ora'
 import inquirer from 'inquirer'
 import opn from 'opn'
+import axios from 'axios'
+import cheerio from 'cheerio'
 
 interface FeedItem {
   title: string
@@ -34,6 +36,28 @@ const feedToChoices = (feed: Items): Promise<Choice[]> => {
   })
 }
 
+const getArticle = async (url: string): Promise<string> => {
+  const res = await axios.get(url)
+  return new Promise((resolve, reject) => {
+    if (res.status === 200) {
+      const $ = cheerio.load(res.data)
+      const content: string[] = []
+      $('.block.article-body .block-content')
+        .children()
+        .each((i, elem) => {
+          if (
+            ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(elem.tagName)
+          ) {
+            content.push($(elem).text())
+          }
+        })
+      resolve(content.join('\n'))
+    } else {
+      reject(`Unable to get article content: ${res.status} ${res.statusText}`)
+    }
+  })
+}
+
 const main = async () => {
   const spinner = ora({
     color: 'white',
@@ -48,15 +72,20 @@ const main = async () => {
     {
       type: 'rawlist',
       name: 'selected',
-      message: 'Open selected article in browser: ',
+      message: 'Read full article of selected headline: ',
       choices,
       pageSize: 100,
     },
   ])
-
   const link = choices[selected - 1].link
-  process.stdout.write(`Opening in browser: ${link}\n`)
-  opn(link)
+  // process.stdout.write(`Opening in browser: ${link}\n`)
+  // opn(link)
+  // process.exit()
+
+  spinner.start('Loading article')
+  const article = await getArticle(link)
+  spinner.stop()
+  process.stdout.write(`${article}\n`)
   process.exit()
 }
 
