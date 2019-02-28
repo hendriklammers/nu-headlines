@@ -53,12 +53,15 @@ const getArticle = async (url: string): Promise<string> => {
             content.push($(elem).text())
           }
         })
-      resolve([...content, '\n'].join('\n'))
+      resolve(content.join('\n'))
     } else {
       reject(`Unable to get article content: ${res.status} ${res.statusText}`)
     }
   })
 }
+
+const inlineMode = (argv: string[]): boolean =>
+  argv.slice(2).some(arg => ['-I', '-i', '--inline', '-inline'].includes(arg))
 
 const main = async () => {
   const spinner = ora({
@@ -80,12 +83,17 @@ const main = async () => {
     },
   ])
   const link = choices[selected - 1].link
-  // process.stdout.write(`Opening in browser: ${link}\n`)
-  // opn(link)
-  // process.exit()
+
+  // Open in browser by default
+  if (!inlineMode(process.argv)) {
+    process.stdout.write(`Opening in browser: ${link}\n`)
+    opn(link)
+    process.exit()
+  }
 
   spinner.start('Loading article')
   const article = await getArticle(link)
+  // TODO: Come up with a solution when the linked article is a video
   spinner.stop()
   process.stdout.write(`${article}\n`)
   process.exit()
