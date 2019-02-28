@@ -5,6 +5,7 @@ import inquirer from 'inquirer'
 import opn from 'opn'
 import axios from 'axios'
 import cheerio from 'cheerio'
+import chalk from 'chalk'
 
 interface FeedItem {
   title: string
@@ -42,16 +43,17 @@ const getArticle = async (url: string): Promise<string> => {
     if (res.status === 200) {
       const $ = cheerio.load(res.data)
       const content: string[] = []
+      const heads = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
       $('.block.article-body .block-content')
         .children()
         .each((i, elem) => {
-          if (
-            ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(elem.tagName)
-          ) {
+          if (heads.includes(elem.tagName)) {
+            content.push('\n' + chalk.cyan($(elem).text()))
+          } else if (elem.tagName === 'p') {
             content.push($(elem).text())
           }
         })
-      resolve(content.join('\n'))
+      resolve([...content, '\n'].join('\n'))
     } else {
       reject(`Unable to get article content: ${res.status} ${res.statusText}`)
     }
