@@ -48,7 +48,7 @@ const getArticle = async (url: string): Promise<string> => {
             content.push($(elem).text())
           }
         })
-      resolve(content.join('\n'))
+      resolve('\n' + content.join('\n'))
     } else {
       reject(`Unable to get article content: ${res.status} ${res.statusText}`)
     }
@@ -58,49 +58,34 @@ const getArticle = async (url: string): Promise<string> => {
 const inlineMode = (argv: string[]): boolean =>
   argv.slice(2).some(arg => ['-I', '-i', '--inline', '-inline'].includes(arg))
 
-// const question = () => {
-//   const rl = readline.createInterface({
-//     input: process.stdin,
-//     output: process.stdout,
-//   })
-//   rl.question('\nSelect an article from the list (q to exit): ', answer => {
-//     rl.close()
-//     if (answer === 'q') {
-//       process.exit()
-//     } else {
-//       const index = parseInt(answer, 10)
-//       if (index > 0 && index <= list.length) {
-//         resolve(list[index - 1])
-//       } else {
-//         console.log('Invalid')
-//       }
-//     }
-//   })
-// }
+const showList = (list: NewsItem[]) => {
+  const output = list.map(({ title, index }) => `${index}) ${title}`).join('\n')
+  process.stdout.write(`\n${output}\n`)
+}
 
-const promptList = (list: NewsItem[]): Promise<NewsItem> =>
+const promptQuestion = (list: NewsItem[]): Promise<NewsItem> =>
   new Promise((resolve, reject) => {
-    process.stdout.write(
-      list.map(({ title, index }) => `${index}) ${title}`).join('\n') + '\n'
-    )
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     })
-    rl.question('\nSelect an article from the list (q to exit): ', answer => {
-      rl.close()
-      if (answer === 'q') {
-        process.exit()
-      } else {
-        const index = parseInt(answer, 10)
-        if (index > 0 && index <= list.length) {
-          resolve(list[index - 1])
+    const question = () => {
+      rl.question('\nSelect an article (q to exit): ', answer => {
+        if (answer === 'q') {
+          rl.close()
+          process.exit()
         } else {
-          // TODO: Prompt question again
-          console.log('Invalid')
+          const index = parseInt(answer, 10)
+          if (index > 0 && index <= list.length) {
+            rl.close()
+            resolve(list[index - 1])
+          } else {
+            question()
+          }
         }
-      }
-    })
+      })
+    }
+    question()
   })
 
 const main = async () => {
@@ -112,11 +97,12 @@ const main = async () => {
   const feed = await parser.parseURL('https://www.nu.nl/rss/Algemeen')
   spinner.stop()
   const items = await feedToItems(feed)
-  const { link } = await promptList(items)
+  showList(items)
+  const { link } = await promptQuestion(items)
 
   // Open in browser by default
   if (!inlineMode(process.argv)) {
-    process.stdout.write(`Opening in browser: ${link}\n`)
+    process.stdout.write(`\nOpening in browser: ${link}\n`)
     opn(link)
     process.exit()
   }
