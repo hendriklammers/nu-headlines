@@ -102,7 +102,6 @@ const main = async () => {
 
   // Open in browser by default
   if (!inlineMode(process.argv)) {
-    process.stdout.write(`\nOpening in browser: ${link}\n`)
     opn(link)
     process.exit()
   }
