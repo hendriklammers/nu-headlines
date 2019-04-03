@@ -1,31 +1,26 @@
 #!/usr/bin/env node
 import Parser, { Items } from 'rss-parser'
+import readline from 'readline'
 import ora from 'ora'
-import inquirer from 'inquirer'
 import opn from 'opn'
 import axios from 'axios'
 import cheerio from 'cheerio'
 import chalk from 'chalk'
 
-interface FeedItem {
+interface NewsItem {
   title: string
+  index: string
   link: string
 }
 
-interface Choice {
-  name: string
-  value: string
-  link: string
-}
-
-const feedToChoices = (feed: Items): Promise<Choice[]> => {
+const feedToItems = (feed: Items): Promise<NewsItem[]> => {
   return new Promise((resolve, reject) => {
     if (feed.items) {
       const choices = feed.items.map(
-        ({ title, link }: FeedItem, index: number) => {
+        ({ title, link }: NewsItem, index: number) => {
           return {
-            name: title,
-            value: `${index + 1}`,
+            title,
+            index: `${index + 1}`,
             link,
           }
         }
@@ -63,6 +58,51 @@ const getArticle = async (url: string): Promise<string> => {
 const inlineMode = (argv: string[]): boolean =>
   argv.slice(2).some(arg => ['-I', '-i', '--inline', '-inline'].includes(arg))
 
+// const question = () => {
+//   const rl = readline.createInterface({
+//     input: process.stdin,
+//     output: process.stdout,
+//   })
+//   rl.question('\nSelect an article from the list (q to exit): ', answer => {
+//     rl.close()
+//     if (answer === 'q') {
+//       process.exit()
+//     } else {
+//       const index = parseInt(answer, 10)
+//       if (index > 0 && index <= list.length) {
+//         resolve(list[index - 1])
+//       } else {
+//         console.log('Invalid')
+//       }
+//     }
+//   })
+// }
+
+const promptList = (list: NewsItem[]): Promise<NewsItem> =>
+  new Promise((resolve, reject) => {
+    process.stdout.write(
+      list.map(({ title, index }) => `${index}) ${title}`).join('\n') + '\n'
+    )
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    })
+    rl.question('\nSelect an article from the list (q to exit): ', answer => {
+      rl.close()
+      if (answer === 'q') {
+        process.exit()
+      } else {
+        const index = parseInt(answer, 10)
+        if (index > 0 && index <= list.length) {
+          resolve(list[index - 1])
+        } else {
+          // TODO: Prompt question again
+          console.log('Invalid')
+        }
+      }
+    })
+  })
+
 const main = async () => {
   const spinner = ora({
     color: 'white',
@@ -71,18 +111,8 @@ const main = async () => {
   const parser = new Parser()
   const feed = await parser.parseURL('https://www.nu.nl/rss/Algemeen')
   spinner.stop()
-
-  const choices = await feedToChoices(feed)
-  const { selected } = await inquirer.prompt([
-    {
-      type: 'rawlist',
-      name: 'selected',
-      message: 'Read full article of selected headline: ',
-      choices,
-      pageSize: 100,
-    },
-  ])
-  const link = choices[selected - 1].link
+  const items = await feedToItems(feed)
+  const { link } = await promptList(items)
 
   // Open in browser by default
   if (!inlineMode(process.argv)) {
