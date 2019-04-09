@@ -5,20 +5,21 @@ import opn from 'opn'
 import axios from 'axios'
 import cheerio from 'cheerio'
 import chalk from 'chalk'
-import path from 'path'
+import url from 'url'
 
 interface NewsItem {
   title: string
-  url: string
+  article: string
 }
 
-const getArticle = async (url: string): Promise<string> => {
-  const res = await axios.get(url)
+const getArticle = async ({ article, title }: NewsItem): Promise<string> => {
+  const res = await axios.get(article)
   return new Promise((resolve, reject) => {
     if (res.status === 200) {
       const $ = cheerio.load(res.data)
-      const content: string[] = []
+      const content: string[] = [chalk.cyan(title) + '\n']
       const heads = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+      // TODO: Better text formatting
       $('.block.article-body .block-content')
         .children()
         .each((i, elem) => {
@@ -76,13 +77,13 @@ const addItem = (
   link: string | undefined
 ) => {
   if (title && link) {
-    const url = path.join('https://www.nu.nl', link)
-    items.push({ title, url })
+    const article = url.resolve('https://www.nu.nl', link)
+    items.push({ title, article })
   }
 }
 
-const getHeadlines = async (url: string): Promise<NewsItem[]> => {
-  const res = await axios.get(url)
+const getHeadlines = async (link: string): Promise<NewsItem[]> => {
+  const res = await axios.get(link)
   return new Promise((resolve, reject) => {
     if (res.status === 200) {
       const $ = cheerio.load(res.data)
@@ -95,7 +96,7 @@ const getHeadlines = async (url: string): Promise<NewsItem[]> => {
       )
 
       $('.block.articlelist .section-nu.source-normal li').each((i, elem) => {
-        // .subtitle contains Video, In beeld etc.
+        // .subtitle contains Video, Podcast, In beeld etc.
         if (
           $(elem)
             .find('.subtitle')
@@ -128,18 +129,18 @@ const main = async () => {
   const items = await getHeadlines('https://www.nu.nl')
   spinner.stop()
   showList(items)
-  const { url } = await promptQuestion(items)
+  const selected = await promptQuestion(items)
 
   // Open in browser by default
   if (!inlineMode(process.argv)) {
-    opn(url)
+    opn(selected.article)
     process.exit()
   }
 
   spinner.start('Loading article')
-  const article = await getArticle(url)
+  const articleText = await getArticle(selected)
   spinner.stop()
-  process.stdout.write(`${article}\n`)
+  process.stdout.write(`${articleText}\n`)
   process.exit()
 }
 
