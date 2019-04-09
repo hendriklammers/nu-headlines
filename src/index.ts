@@ -94,8 +94,15 @@ const getHeadlines = async (url: string): Promise<NewsItem[]> => {
         $('.block.headline.section-nu > a').attr('href')
       )
 
-      // TODO: Filter out video and podcast
       $('.block.articlelist .section-nu.source-normal li').each((i, elem) => {
+        // .subtitle contains Video, In beeld etc.
+        if (
+          $(elem)
+            .find('.subtitle')
+            .text().length
+        ) {
+          return
+        }
         addItem(
           items,
           $(elem)
@@ -131,7 +138,6 @@ const main = async () => {
 
   spinner.start('Loading article')
   const article = await getArticle(url)
-  // TODO: Come up with a solution when the linked article is a video
   spinner.stop()
   process.stdout.write(`${article}\n`)
   process.exit()
