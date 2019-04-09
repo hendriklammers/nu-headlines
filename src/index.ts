@@ -1,35 +1,15 @@
 #!/usr/bin/env node
-import Parser, { Items } from 'rss-parser'
 import readline from 'readline'
 import ora from 'ora'
 import opn from 'opn'
 import axios from 'axios'
 import cheerio from 'cheerio'
 import chalk from 'chalk'
+import path from 'path'
 
 interface NewsItem {
   title: string
-  index: string
-  link: string
-}
-
-const feedToItems = (feed: Items): Promise<NewsItem[]> => {
-  return new Promise((resolve, reject) => {
-    if (feed.items) {
-      const choices = feed.items.map(
-        ({ title, link }: NewsItem, index: number) => {
-          return {
-            title,
-            index: `${index + 1}`,
-            link,
-          }
-        }
-      )
-      resolve(choices)
-    } else {
-      reject('No feed items available')
-    }
-  })
+  url: string
 }
 
 const getArticle = async (url: string): Promise<string> => {
@@ -59,7 +39,9 @@ const inlineMode = (argv: string[]): boolean =>
   argv.slice(2).some(arg => ['-I', '-i', '--inline', '-inline'].includes(arg))
 
 const showList = (list: NewsItem[]) => {
-  const output = list.map(({ title, index }) => `${index}) ${title}`).join('\n')
+  const output = list
+    .map(({ title }, index) => `${index + 1}) ${title}`)
+    .join('\n')
   process.stdout.write(`\n${output}\n`)
 }
 
@@ -88,26 +70,67 @@ const promptQuestion = (list: NewsItem[]): Promise<NewsItem> =>
     question()
   })
 
+const addItem = (
+  items: NewsItem[],
+  title: string | undefined,
+  link: string | undefined
+) => {
+  if (title && link) {
+    const url = path.join('https://www.nu.nl', link)
+    items.push({ title, url })
+  }
+}
+
+const getHeadlines = async (url: string): Promise<NewsItem[]> => {
+  const res = await axios.get(url)
+  return new Promise((resolve, reject) => {
+    if (res.status === 200) {
+      const $ = cheerio.load(res.data)
+      const items: NewsItem[] = []
+      const headline = $('.block.headline.section-nu > a')
+      addItem(
+        items,
+        $('.block.headline.section-nu > a h1.title').text(),
+        $('.block.headline.section-nu > a').attr('href')
+      )
+
+      // TODO: Filter out video and podcast
+      $('.block.articlelist .section-nu.source-normal li').each((i, elem) => {
+        addItem(
+          items,
+          $(elem)
+            .find('.title')
+            .text(),
+          $(elem)
+            .find('>a')
+            .attr('href')
+        )
+      })
+      resolve(items)
+    } else {
+      reject(`Unable to get article content: ${res.status} ${res.statusText}`)
+    }
+  })
+}
+
 const main = async () => {
   const spinner = ora({
     color: 'white',
-    text: 'Loading rss feed',
+    text: 'Loading news',
   }).start()
-  const parser = new Parser()
-  const feed = await parser.parseURL('https://www.nu.nl/rss/Algemeen')
+  const items = await getHeadlines('https://www.nu.nl')
   spinner.stop()
-  const items = await feedToItems(feed)
   showList(items)
-  const { link } = await promptQuestion(items)
+  const { url } = await promptQuestion(items)
 
   // Open in browser by default
   if (!inlineMode(process.argv)) {
-    opn(link)
+    opn(url)
     process.exit()
   }
 
   spinner.start('Loading article')
-  const article = await getArticle(link)
+  const article = await getArticle(url)
   // TODO: Come up with a solution when the linked article is a video
   spinner.stop()
   process.stdout.write(`${article}\n`)
