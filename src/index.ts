@@ -53,7 +53,7 @@ const promptQuestion = (list: NewsItem[]): Promise<NewsItem> =>
       output: process.stdout,
     })
     const question = () => {
-      rl.question('\nSelect an article (q to exit): ', answer => {
+      rl.question('\nSelect an article (q to quit): ', answer => {
         if (answer === 'q') {
           rl.close()
           process.exit()
